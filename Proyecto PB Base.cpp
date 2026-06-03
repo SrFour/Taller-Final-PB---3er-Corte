@@ -130,8 +130,8 @@ int main() {
 	cargarUsuarios(usuarios);
 	cargarProductos(productos);
 	cargarComentarios(comentarios);
-	//cargarCarrito(productos);
-	//cargarOrdenes();
+	cargarCarrito(productos);
+	cargarOrdenes();
 	
     cout << "\n Bienvenido a Tecnonline" << endl;
 
@@ -176,11 +176,11 @@ int main() {
                     break;
                 case 5:
                     system("pause"); system("cls");
-                    //listarCarritosUsuario(usuarioActivo.idUsuario);
+                    listarCarritosUsuario(usuarioActivo.idUsuario);
                     break;
                 case 6:
                     system("pause"); system("cls");
-                    //pagarCarrito(productos, usuarioActivo.idUsuario, usuarios);
+                    pagarCarrito(productos, usuarioActivo.idUsuario, usuarios);
                     // Actualizar usuario activo por si recibio bono
                     for (int i = 0; i < 5; i++) {
                         if (usuarios[i].idUsuario == usuarioActivo.idUsuario) {
@@ -191,11 +191,11 @@ int main() {
                     break;
                 case 7:
                     system("pause"); system("cls");
-                    //listarProductosMasVendidos();
+                    listarProductosMasVendidos();
                     break;
                 case 8:
                     system("pause"); system("cls");
-                    //mostrarGanancias(usuarios);
+                    mostrarGanancias(usuarios);
                     break;
                 case 9:
                     system("pause"); system("cls");
