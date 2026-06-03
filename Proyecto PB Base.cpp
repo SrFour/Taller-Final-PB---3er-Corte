@@ -523,5 +523,608 @@ void agregarAlCarrito(Producto p[50], int idUsuario) {
 // ==================== LISTAR CARRITOS DEL USUARIO ====================
 
 void listarCarritosUsuario(int idUsuario) {
+    cout << "\n----- MIS CARRITOS -----\n" << endl;
+
+    int encontrado = 0;
+    for (int i = 0; i < totalCarritos; i++) {
+        if (carritos[i].idUsuario == idUsuario) {
+            encontrado = 1;
+            string estado = (carritos[i].pagado == 1) ? "PAGADO" : "PENDIENTE";
+            cout << "Carrito #" << carritos[i].idCarrito
+                 << " [" << estado << "]" << endl;
+            cout << "-----------------------------------" << endl;
+
+            for (int j = 0; j < carritos[i].cantItems; j++) {
+                cout << "  " << j + 1 << ". "
+                     << carritos[i].items[j].producto.nombre
+                     << " x" << carritos[i].items[j].cantidad
+                     << " - $" << carritos[i].items[j].producto.precio * carritos[i].items[j].cantidad
+                     << endl;
+            }
+
+            cout << "  Subtotal:  $" << carritos[i].subtotal  << endl;
+            cout << "  Impuestos: $" << carritos[i].impuestos << endl;
+            cout << "  Total:     $" << carritos[i].subtotal + carritos[i].impuestos << endl;
+            cout << endl;
+        }
+    }
+
+    if (!encontrado)
+        cout << "No tienes carritos registrados." << endl;
+}
+
+// ==================== GUARDAR Y CARGAR CARRITO ====================
+
+void guardarCarrito()
+{
+    ofstream archivo("carritos.txt");
+
+    archivo << totalCarritos << endl;
+
+    for(int i=0;i<totalCarritos;i++)
+    {
+        archivo
+        << carritos[i].idCarrito << ","
+        << carritos[i].idUsuario << ","
+        << carritos[i].cantItems << ","
+        << carritos[i].subtotal << ","
+        << carritos[i].impuestos << ","
+        << carritos[i].pagado
+        << endl;
+
+        for(int j=0;j<carritos[i].cantItems;j++)
+        {
+            archivo
+            << carritos[i].items[j].producto.idProducto
+            << ","
+            << carritos[i].items[j].cantidad
+            << endl;
+        }
+    }
+
+    archivo.close();
+}
+
+void cargarCarrito(Producto p[50])
+{
+    ifstream archivo("carritos.txt");
+
+    if(!archivo.is_open())
+        return;
+
+    archivo >> totalCarritos;
+
+    for(int i=0;i<totalCarritos;i++)
+    {
+        char coma;
+
+        archivo
+        >> carritos[i].idCarrito >> coma
+        >> carritos[i].idUsuario >> coma
+        >> carritos[i].cantItems >> coma
+        >> carritos[i].subtotal >> coma
+        >> carritos[i].impuestos >> coma
+        >> carritos[i].pagado;
+
+        archivo.ignore();
+
+        for(int j=0;j<carritos[i].cantItems;j++)
+        {
+            int idProducto;
+            int cantidad;
+
+            archivo
+            >> idProducto >> coma
+            >> cantidad;
+
+            archivo.ignore();
+
+            carritos[i].items[j].cantidad = cantidad;
+
+            for(int k=0;k<50;k++)
+            {
+                if(p[k].idProducto == idProducto)
+                {
+                    carritos[i].items[j].producto = p[k];
+                    break;
+                }
+            }
+        }
+    }
+
+    archivo.close();
+}
+
+// ==================== GUARDAR ORDEN EN ARCHIVO TXT ====================
+
+void guardarOrdenEnArchivo(OrdenDeCompra &o, Usuario &u) {
+    char nombreArchivo[100];
+    sprintf(nombreArchivo, "orden_%d.txt", o.idOrden);
+
+    ofstream archivo(nombreArchivo);
+    if (!archivo.is_open()) {
+        cout << "Error al crear el archivo de la orden." << endl;
+        return;
+    }
+
+    archivo << "========================================" << endl;
+    archivo << "         ORDEN DE COMPRA #" << o.idOrden   << endl;
+    archivo << "========================================" << endl;
+    archivo << "Usuario:        " << u.nombre              << endl;
+    archivo << "Correo:         " << u.correoElectronico   << endl;
+    archivo << "Direccion:      " << u.direccion           << endl;
+    archivo << "Metodo de pago: " << u.metodoDePago        << endl;
+    archivo << "----------------------------------------" << endl;
+    archivo << "PRODUCTOS:" << endl;
+
+    for (int i = 0; i < o.cantProductos; i++) {
+        archivo << "  " << i + 1 << ". "
+                << o.productos[i].producto.nombre
+                << " x" << o.productos[i].cantidad
+                << " - $" << o.productos[i].producto.precio * o.productos[i].cantidad
+                << endl;
+    }
+
+    archivo << "----------------------------------------" << endl;
+    archivo << "Subtotal:   $" << o.subtotal   << endl;
+    archivo << "Impuestos:  $" << o.impuestos  << endl;
+    archivo << "Envio:      $" << o.envio      << endl;
+
+    if (o.descuento > 0)
+        archivo << "Descuento (bono 50%): -$" << o.descuento << endl;
+
+    archivo << "TOTAL:      $" << o.total      << endl;
+
+    if (o.descuento > 0)
+        archivo << "\n* Se aplico bono de descuento del 50% en esta compra." << endl;
+
+    archivo << "========================================" << endl;
+    archivo.close();
+
+    cout << "Orden guardada en el archivo: " << nombreArchivo << endl;
+}
+
+// ==================== CARGAR Y GUARDAR ORDEN ====================
+
+void cargarOrdenes()
+{
+    ifstream archivo("ordenes.txt");
+
+    if(!archivo.is_open())
+        return;
+
+    archivo >> totalOrdenes;
+    archivo.ignore();
+
+    for(int i=0; i<totalOrdenes; i++)
+    {
+        string aux;
+
+        getline(archivo, aux, ',');
+        ordenes[i].idOrden = atoi(aux.c_str());
+
+        getline(archivo, aux, ',');
+        ordenes[i].idUsuario = atoi(aux.c_str());
+
+        getline(archivo, aux, ',');
+        ordenes[i].cantProductos = atoi(aux.c_str());
+
+        getline(archivo, aux, ',');
+        ordenes[i].subtotal = atof(aux.c_str());
+
+        getline(archivo, aux, ',');
+        ordenes[i].impuestos = atof(aux.c_str());
+
+        getline(archivo, aux, ',');
+        ordenes[i].envio = atof(aux.c_str());
+
+        getline(archivo, aux, ',');
+        ordenes[i].descuento = atof(aux.c_str());
+
+        getline(archivo, aux);
+        ordenes[i].total = atof(aux.c_str());
+
+        for(int j=0; j<ordenes[i].cantProductos; j++)
+        {
+            getline(archivo, aux, ',');
+            ordenes[i].productos[j].producto.idProducto = atoi(aux.c_str());
+
+            getline(archivo,
+                    ordenes[i].productos[j].producto.nombre,
+                    ',');
+
+            getline(archivo, aux, ',');
+            ordenes[i].productos[j].producto.precio = atof(aux.c_str());
+
+            getline(archivo, aux);
+            ordenes[i].productos[j].cantidad = atoi(aux.c_str());
+        }
+    }
+
+    archivo.close();
+}
+
+void guardarOrdenes()
+{
+    ofstream archivo("ordenes.txt");
+
+    archivo << totalOrdenes << endl;
+
+    for(int i=0; i<totalOrdenes; i++)
+    {
+        archivo
+        << ordenes[i].idOrden << ","
+        << ordenes[i].idUsuario << ","
+        << ordenes[i].cantProductos << ","
+        << ordenes[i].subtotal << ","
+        << ordenes[i].impuestos << ","
+        << ordenes[i].envio << ","
+        << ordenes[i].descuento << ","
+        << ordenes[i].total
+        << endl;
+
+        for(int j=0; j<ordenes[i].cantProductos; j++)
+        {
+            archivo
+            << ordenes[i].productos[j].producto.idProducto
+            << ","
+            << ordenes[i].productos[j].producto.nombre
+            << ","
+            << ordenes[i].productos[j].producto.precio
+            << ","
+            << ordenes[i].productos[j].cantidad
+            << endl;
+        }
+    }
+
+    archivo.close();
+}
+
+
+
+// ==================== PAGAR CARRITO ====================
+
+void pagarCarrito(Producto p[50], int idUsuario, Usuario u[5]) {
+    setlocale(LC_ALL, "spanish");
+
+    // Mostrar carritos pendientes del usuario
+    cout << "\n----- PAGAR CARRITO -----\n" << endl;
+
+    int indices[10];
+    int countPendientes = 0;
+
+    for (int i = 0; i < totalCarritos; i++) {
+        if (carritos[i].idUsuario == idUsuario && carritos[i].pagado == 0) {
+            indices[countPendientes++] = i;
+            cout << countPendientes << ". Carrito #" << carritos[i].idCarrito
+                 << " - Total estimado: $"
+                 << carritos[i].subtotal + carritos[i].impuestos << endl;
+        }
+    }
+
+    if (countPendientes == 0) {
+        cout << "No tienes carritos pendientes de pago." << endl;
+        return;
+    }
+
+    int eleccion;
+    cout << "\nSeleccione el numero del carrito a pagar: ";
+    cin >> eleccion;
+
+    if (eleccion < 1 || eleccion > countPendientes) {
+        cout << "Opcion invalida." << endl;
+        return;
+    }
+
+    int idx = indices[eleccion - 1];
+    CarritoDeCompras &c = carritos[idx];
+
+    // Buscar el usuario en el arreglo para aplicar bono
+    int indiceU = -1;
+    for (int i = 0; i < 5; i++) {
+        if (u[i].idUsuario == idUsuario) { indiceU = i; break; }
+    }
+
+    double subtotal  = c.subtotal;
+    double impuestos = c.impuestos;
+    double envio     = 5000;
+    double descuento = 0;
+
+    // Aplicar bono si el usuario lo tiene
+    if (indiceU != -1 && u[indiceU].bonoPorcentaje == 50) {
+        descuento = subtotal * 0.50;
+        cout << "Se aplico tu bono de descuento del 50%. Descuento: $" << descuento << endl;
+        u[indiceU].bonoPorcentaje = 0; // Consumir el bono
+        ///////////////////
+        guardarUsuarios(u);
+        ///////////////////
+        usuarioActivo.bonoPorcentaje = 0;
+    }
+
+    double total = subtotal + impuestos + envio - descuento;
+
+    // Crear la orden
+    OrdenDeCompra orden;
+    orden.idOrden      = totalOrdenes + 1;
+    orden.idUsuario    = idUsuario;
+    orden.cantProductos= c.cantItems;
+    orden.subtotal     = subtotal;
+    orden.impuestos    = impuestos;
+    orden.envio        = envio;
+    orden.descuento    = descuento;
+    orden.total        = total;
+
+    for (int i = 0; i < c.cantItems; i++)
+        orden.productos[i] = c.items[i];
+
+    ordenes[totalOrdenes] = orden;
+    totalOrdenes++;
     
+    /////////////////
+    guardarOrdenes();
+    /////////////////
+
+    // Marcar carrito como pagado
+    c.pagado = 1;
+    
+    guardarCarrito();
+    
+    for(int i=0; i<c.cantItems; i++)
+	{
+	    int idProducto = c.items[i].producto.idProducto;
+	    int cantidad = c.items[i].cantidad;
+	
+	    for(int j=0; j<50; j++)
+	    {
+	        if(p[j].idProducto == idProducto)
+	        {
+	            p[j].stock -= cantidad;
+	            break;
+	        }
+	    }
+	}
+
+	guardarProductos(p);
+
+    // Guardar en archivo
+    if (indiceU != -1)
+        guardarOrdenEnArchivo(orden, u[indiceU]);
+
+    cout << "\n========================================" << endl;
+    cout << " RESUMEN DE PAGO - ORDEN #" << orden.idOrden << endl;
+    cout << "========================================" << endl;
+    cout << "Subtotal:   $" << subtotal  << endl;
+    cout << "Impuestos:  $" << impuestos << endl;
+    cout << "Envio:      $" << envio     << endl;
+    if (descuento > 0)
+        cout << "Descuento:  -$" << descuento << endl;
+    cout << "TOTAL:      $" << total     << endl;
+    cout << "========================================" << endl;
+
+    // Verificar si esta orden supera el valor limite para otorgar bono
+    double limiteParaBono = 100000;
+    cout << "\nIngrese el valor limite para otorgar bono al proximo carrito: $";
+    cin >> limiteParaBono;
+
+    if (total > limiteParaBono && indiceU != -1 && u[indiceU].bonoPorcentaje == 0) {
+        u[indiceU].bonoPorcentaje = 50;
+        ///////////////////
+        guardarUsuarios(u);
+        ///////////////////
+        usuarioActivo.bonoPorcentaje = 50;
+        cout << "\n¡Felicitaciones! Tu orden supero $" << limiteParaBono
+             << ". Se te ha asignado un bono del 50% para tu proximo carrito." << endl;
+    }
+
+    cout << "\nPago realizado con exito." << endl;
+}
+
+// ==================== PRODUCTOS MAS VENDIDOS ====================
+
+void listarProductosMasVendidos() {
+    cout << "\n----- PRODUCTOS MAS VENDIDOS -----\n" << endl;
+
+    if (totalOrdenes == 0) {
+        cout << "Aun no hay ordenes de compra registradas." << endl;
+        return;
+    }
+
+    // Recopilar ventas por idProducto
+    int idsVistos[50];
+    int cantVendida[50];
+    int numProductos = 0;
+
+    for (int i = 0; i < totalOrdenes; i++) {
+        for (int j = 0; j < ordenes[i].cantProductos; j++) {
+            int idP = ordenes[i].productos[j].producto.idProducto;
+            int cant = ordenes[i].productos[j].cantidad;
+
+            int yaEsta = -1;
+            for (int k = 0; k < numProductos; k++) {
+                if (idsVistos[k] == idP) { yaEsta = k; break; }
+            }
+
+            if (yaEsta == -1) {
+                idsVistos[numProductos]   = idP;
+                cantVendida[numProductos] = cant;
+                numProductos++;
+            } else {
+                cantVendida[yaEsta] += cant;
+            }
+        }
+    }
+
+    // Ordenar por cantidad vendida (burbuja descendente)
+    for (int i = 0; i < numProductos - 1; i++) {
+        for (int j = 0; j < numProductos - i - 1; j++) {
+            if (cantVendida[j] < cantVendida[j + 1]) {
+                int tmpId   = idsVistos[j];   idsVistos[j]   = idsVistos[j+1];   idsVistos[j+1]   = tmpId;
+                int tmpCant = cantVendida[j]; cantVendida[j] = cantVendida[j+1]; cantVendida[j+1] = tmpCant;
+            }
+        }
+    }
+
+    // Mostrar resultados
+    for (int i = 0; i < numProductos; i++) {
+        int idP = idsVistos[i];
+
+        // Nombre del producto
+        string nombreP = "Desconocido";
+        for (int o = 0; o < totalOrdenes; o++) {
+            for (int j = 0; j < ordenes[o].cantProductos; j++) {
+                if (ordenes[o].productos[j].producto.idProducto == idP) {
+                    nombreP = ordenes[o].productos[j].producto.nombre;
+                    break;
+                }
+            }
+        }
+
+        cout << "ID: " << idP << " | " << nombreP
+             << " | Vendido: " << cantVendida[i] << " unidad(es)" << endl;
+
+        // Listar ordenes donde aparece
+        cout << "  Aparece en las ordenes: ";
+        int primero = 1;
+        for (int o = 0; o < totalOrdenes; o++) {
+            for (int j = 0; j < ordenes[o].cantProductos; j++) {
+                if (ordenes[o].productos[j].producto.idProducto == idP) {
+                    if (!primero) cout << ", ";
+                    cout << "#" << ordenes[o].idOrden;
+                    primero = 0;
+                    break;
+                }
+            }
+        }
+        cout << endl;
+        cout << "-----------------------------------" << endl;
+    }
+}
+
+// ==================== GANANCIAS DE LA PLATAFORMA ====================
+
+void mostrarGanancias(Usuario u[5]) {
+    cout << "\n----- GANANCIAS DE LA PLATAFORMA -----\n" << endl;
+
+    if (totalOrdenes == 0) {
+        cout << "Aun no hay ordenes de compra registradas." << endl;
+        return;
+    }
+
+    double totalSubtotal  = 0;
+    double totalImpuestos = 0;
+    double totalFinal     = 0;
+
+    for (int i = 0; i < totalOrdenes; i++) {
+        totalSubtotal  += ordenes[i].subtotal;
+        totalImpuestos += ordenes[i].impuestos;
+        totalFinal     += ordenes[i].total;
+    }
+
+    cout << "Total de ordenes procesadas: " << totalOrdenes        << endl;
+    cout << "Subtotal acumulado:  $"        << totalSubtotal       << endl;
+    cout << "Impuestos acumulados:$"        << totalImpuestos      << endl;
+    cout << "Total acumulado:     $"        << totalFinal          << endl;
+    cout << "\n--- Detalle por orden ---" << endl;
+
+    double limiteParaBono;
+    cout << "\nIngrese el valor limite para identificar ordenes con bono: $";
+    cin >> limiteParaBono;
+    cout << endl;
+
+    for (int i = 0; i < totalOrdenes; i++) {
+        // Nombre del usuario
+        string nombreU = "Desconocido";
+        for (int j = 0; j < 5; j++) {
+            if (u[j].idUsuario == ordenes[i].idUsuario) {
+                nombreU = u[j].nombre;
+                break;
+            }
+        }
+
+        cout << "Orden #" << ordenes[i].idOrden
+             << " | Usuario: " << nombreU
+             << " | Subtotal: $" << ordenes[i].subtotal
+             << " | Impuestos: $" << ordenes[i].impuestos
+             << " | Total: $" << ordenes[i].total;
+
+        if (ordenes[i].total > limiteParaBono) {
+            cout << " [*** SUPERA EL LIMITE - BONO OTORGADO]";
+
+            // Otorgar bono al usuario si aun no lo tiene
+            for (int j = 0; j < 5; j++) 
+			{
+               u[j].bonoPorcentaje = 50;
+			   
+			    if (u[j].idUsuario == ordenes[i].idUsuario && u[j].bonoPorcentaje == 0) {
+            			//////////////////
+                    if (u[j].idUsuario == usuarioActivo.idUsuario)
+                        usuarioActivo.bonoPorcentaje = 50;
+                    cout << " -> Bono 50% asignado a " << u[j].nombre;
+                }
+            }
+        }
+
+        cout << endl;
+    }
+
+    cout << "\n======================================" << endl;
+    cout << "Usuarios con bono activo:" << endl;
+    int hayBono = 0;
+    for (int i = 0; i < 5; i++) 
+		{
+	        if (u[i].bonoPorcentaje > 0) 
+			{
+	            cout << "  - " << u[i].nombre << " (" << u[i].bonoPorcentaje << "% de descuento)" << endl;
+	            hayBono = 1;
+	        }
+	    }
+	    if (!hayBono)
+	        cout << "  Ninguno." << endl;
+    
+    guardarUsuarios(u);
+}
+
+// ==================== GUARDAR PRODUCTOS ====================
+
+void guardarProductos(Producto p[50])
+{
+    ofstream archivo("productos.txt");
+
+    archivo<<"idProducto,nombre,descripcion,precio,stock\n";
+
+    for(int i=0;i<50;i++)
+    {
+        archivo
+        <<p[i].idProducto<<","
+        <<p[i].nombre<<","
+        <<p[i].descripcion<<","
+        <<p[i].precio<<","
+        <<p[i].stock<<endl;
+    }
+
+    archivo.close();
+}
+
+// ==================== GUARDAR USUARIOS ====================
+
+void guardarUsuarios(Usuario u[5])
+{
+    ofstream archivo("Usuarios.txt");
+
+    archivo << "idUsuario,nombre,correoElectronico,contrasena,direccion,metodoDePago,bonoPorcentaje\n";
+
+    for(int i=0;i<5;i++)
+    {
+        archivo
+        << u[i].idUsuario << ","
+        << u[i].nombre << ","
+        << u[i].correoElectronico << ","
+        << u[i].contrasena << ","
+        << u[i].direccion << ","
+        << u[i].metodoDePago << ","
+        << u[i].bonoPorcentaje
+        << endl;
+    }
+
+    archivo.close();
 }
